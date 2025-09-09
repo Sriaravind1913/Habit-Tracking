@@ -21,6 +21,8 @@ class Habit(models.Model):
     archived = models.BooleanField(default=False)
     goal_type = models.CharField(max_length=10, choices=[('weekly', 'Weekly'), ('monthly', 'Monthly')], default='weekly')
     goal_target = models.PositiveIntegerField(default=5)
+    # Optional daily reminder time in 24h format
+    reminder_time = models.TimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

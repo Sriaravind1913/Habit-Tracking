@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import axios from 'axios'
+import api from '../utils/api.js'
 import ProgressTracker from '../components/ProgressTracker.js'
 import MonthCalendar from '../components/MonthCalendar.js'
 import NotesModal from '../components/NotesModal.js'
-
-const API = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
 export default function HabitDetails() {
   const { id } = useParams()
@@ -15,14 +13,13 @@ export default function HabitDetails() {
   const [modalOpen, setModalOpen] = useState(false)
   const [modalDate, setModalDate] = useState('')
   const [modalInitial, setModalInitial] = useState('')
-  const auth = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('access')}` } })
 
   useEffect(() => {
     async function load() {
       const [h, l, n] = await Promise.all([
-        axios.get(`${API}/habits/${id}/`, auth()),
-        axios.get(`${API}/habits/${id}/logs/`, auth()),
-        axios.get(`${API}/habits/${id}/notes/`, auth()),
+        api.get(`/habits/${id}/`),
+        api.get(`/habits/${id}/logs/`),
+        api.get(`/habits/${id}/notes/`),
       ])
       setHabit(h.data)
       setLogs(l.data)
@@ -38,9 +35,9 @@ export default function HabitDetails() {
   }
 
   async function saveNote(content) {
-    await axios.post(`${API}/habits/${id}/notes/`, { date: modalDate, content }, auth())
+    await api.post(`/habits/${id}/notes/`, { date: modalDate, content })
     // refresh notes
-    const res = await axios.get(`${API}/habits/${id}/notes/`, auth())
+    const res = await api.get(`/habits/${id}/notes/`)
     setNotes(res.data)
     setModalOpen(false)
   }

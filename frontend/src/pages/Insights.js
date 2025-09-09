@@ -1,16 +1,13 @@
 import React, { useEffect, useState } from 'react'
-import axios from 'axios'
-
-const API = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
+import api from '../utils/api.js'
 
 export default function Insights() {
   const [data, setData] = useState(null)
-  const auth = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('access')}` } })
 
   useEffect(() => {
     async function load() {
       try {
-        const res = await axios.get(`${API}/dashboard/`, auth())
+        const res = await api.get('/dashboard/')
         setData(res.data)
       } catch (e) { /* ignore */ }
     }
@@ -35,13 +32,13 @@ export default function Insights() {
         ),
       ),
       React.createElement('div', { className: 'flex gap-3' },
-        React.createElement('a', { href: `${API}/export/csv/`, className: 'px-3 py-2 rounded bg-gray-900 text-white', onClick: (e) => {
-          const token = localStorage.getItem('access'); if (!token) { e.preventDefault(); return }
-          e.currentTarget.setAttribute('href', `${API}/export/csv/`)
+        React.createElement('a', { href: '/api/export/csv/', className: 'px-3 py-2 rounded bg-gray-900 text-white', onClick: (e) => {
+          e.preventDefault()
+          window.open('/api/export/csv/', '_blank')
         } }, 'Export CSV'),
-        React.createElement('a', { href: `${API}/export/json/`, className: 'px-3 py-2 rounded border', onClick: (e) => {
-          const token = localStorage.getItem('access'); if (!token) { e.preventDefault(); return }
-          e.currentTarget.setAttribute('href', `${API}/export/json/`)
+        React.createElement('a', { href: '/api/export/json/', className: 'px-3 py-2 rounded border', onClick: (e) => {
+          e.preventDefault()
+          window.open('/api/export/json/', '_blank')
         } }, 'Export JSON'),
       )
     )

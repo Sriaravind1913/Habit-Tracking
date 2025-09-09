@@ -5,6 +5,7 @@ import { setTheme } from '../theme.js'
 export default function Navbar() {
   const navigate = useNavigate()
   const token = localStorage.getItem('access')
+  const [uiTick, setUiTick] = React.useState(0)
 
   function logout() {
     localStorage.removeItem('access')
@@ -21,18 +22,101 @@ export default function Navbar() {
           React.createElement(Link, { to: '/dashboard', className: 'hover:underline' }, 'Habits'),
           React.createElement(Link, { to: '/insights', className: 'hover:underline' }, 'Insights'),
 
-          React.createElement('button', { 
-            className: 'p-2 rounded border hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors', 
-            onClick: () => {
-              const isDark = document.documentElement.classList.contains('dark')
-              setTheme(!isDark)
+          (function(){
+            const isDark = document.documentElement.classList.contains('dark')
+            const [pressed, setPressed] = [false, ()=>{}] // placeholder for inline events; not using extra state
+            const bg = isDark
+              ? 'radial-gradient(circle at 35% 35%, #1f2937 0%, #111827 45%, #0b1220 100%)'
+              : 'radial-gradient(circle at 35% 35%, #ffffff 0%, #f3f4f6 50%, #e5e7eb 100%)'
+            const border = isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.06)'
+            const icon = isDark ? '☾' : '☼'
+            const iconColor = isDark ? '#cbd5e1' : '#374151'
+
+            return React.createElement('button', {
+              type: 'button',
+              role: 'switch',
+              'aria-checked': isDark,
+              title: 'Toggle theme',
+              onClick: () => {
+                const current = document.documentElement.classList.contains('dark')
+                setTheme(!current)
+                setUiTick(x=>x+1)
+              },
+              onMouseEnter: (e)=>{ e.currentTarget.style.boxShadow = (document.documentElement.classList.contains('dark')
+                ? '0 9px 16px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -4px 10px rgba(0,0,0,0.50)'
+                : '0 9px 16px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,1), inset 0 -4px 10px rgba(0,0,0,0.14)') },
+              onMouseLeave: (e)=>{ e.currentTarget.style.boxShadow = (document.documentElement.classList.contains('dark')
+                ? '0 6px 12px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -4px 10px rgba(0,0,0,0.45)'
+                : '0 6px 12px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -4px 10px rgba(0,0,0,0.12)'); e.currentTarget.style.transform='translateY(0) scale(1)' },
+              onMouseDown: (e)=>{ e.currentTarget.style.transform='translateY(1px) scale(0.97)'; e.currentTarget.style.boxShadow = (document.documentElement.classList.contains('dark')
+                ? '0 3px 6px rgba(0,0,0,0.55), inset 0 2px 6px rgba(0,0,0,0.6)'
+                : '0 3px 6px rgba(0,0,0,0.25), inset 0 2px 6px rgba(0,0,0,0.18)') },
+              onMouseUp:   (e)=>{ e.currentTarget.style.transform='translateY(0) scale(1)' },
+              style: {
+                width: '40px',
+                height: '40px',
+                borderRadius: '9999px',
+                background: bg,
+                border: border,
+                boxShadow: isDark
+                  ? '0 10px 18px rgba(3,7,18,0.55), 0 2px 3px rgba(0,0,0,0.25), inset 0 2px 3px rgba(255,255,255,0.06), inset 0 -6px 14px rgba(0,0,0,0.55)'
+                  : '0 10px 18px rgba(0,0,0,0.22), 0 2px 3px rgba(0,0,0,0.08), inset 0 2px 3px rgba(255,255,255,0.95), inset 0 -6px 14px rgba(0,0,0,0.12)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                overflow: 'hidden',
+                transition: 'transform 120ms ease, box-shadow 180ms ease'
+              }
             },
-            title: 'Toggle theme'
-          }, 
-            React.createElement('span', { className: 'text-lg' }, 
-              document.documentElement.classList.contains('dark') ? '☀️' : '🌙'
+              React.createElement('span', {
+                'aria-hidden': true,
+                style: {
+                  color: iconColor,
+                  fontSize: '16px',
+                  transform: isDark ? 'translateX(0)' : 'translateX(0)',
+                  transition: 'transform 280ms ease, opacity 220ms ease'
+                }
+              }, icon),
+              // outer rim for beveled edge
+              React.createElement('span', {
+                'aria-hidden': true,
+                style: {
+                  position: 'absolute',
+                  inset: '2px',
+                  borderRadius: '9999px',
+                  boxShadow: isDark
+                    ? 'inset 0 1px 1px rgba(255,255,255,0.06), inset 0 -2px 4px rgba(0,0,0,0.6)'
+                    : 'inset 0 1px 1px rgba(255,255,255,0.9), inset 0 -2px 4px rgba(0,0,0,0.12)'
+                }
+              }),
+              React.createElement('span', {
+                style: {
+                  position: 'absolute',
+                  width: '160%',
+                  height: '160%',
+                  left: '-20%',
+                  top: isDark ? '55%' : '-55%',
+                  background: isDark ? 'linear-gradient(180deg, rgba(99,102,241,0.25), rgba(0,0,0,0))' : 'linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0))',
+                  transform: 'rotate(25deg)',
+                  transition: 'top 320ms ease'
+                }
+              }),
+              // soft drop shadow ellipse beneath to boost 3D
+              React.createElement('span', {
+                'aria-hidden': true,
+                style: {
+                  position: 'absolute',
+                  bottom: '-18px',
+                  width: '70%',
+                  height: '26px',
+                  borderRadius: '50%',
+                  filter: 'blur(10px)',
+                  background: isDark ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.20)'
+                }
+              })
             )
-          ),
+          })(),
           token
             ? React.createElement('button', { onClick: logout, className: 'px-3 py-1 rounded bg-gray-900 text-white' }, 'Logout')
             : React.createElement(Link, { to: '/login', className: 'px-3 py-1 rounded bg-gray-900 text-white' }, 'Login')

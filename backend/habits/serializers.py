@@ -24,7 +24,7 @@ class HabitSerializer(serializers.ModelSerializer):
         model = Habit
         fields = [
             'id', 'name', 'description', 'target_frequency', 'start_date', 'order', 'archived',
-            'goal_type', 'goal_target', 'created_at', 'updated_at', 'logs', 'notes'
+            'goal_type', 'goal_target', 'reminder_time', 'created_at', 'updated_at', 'logs', 'notes'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 

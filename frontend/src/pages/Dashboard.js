@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react'
-import axios from 'axios'
+import api from '../utils/api.js'
 import { Link, useNavigate } from 'react-router-dom'
 import HabitCard from '../components/HabitCard.js'
 import HabitFormModal from '../components/HabitFormModal.js'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import Notifications from '../components/Notifications.js'
-
-const API = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
 export default function Dashboard() {
   const [habits, setHabits] = useState([])
@@ -15,53 +13,72 @@ export default function Dashboard() {
   const [editing, setEditing] = useState(null)
   const navigate = useNavigate()
 
-  const auth = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('access')}` } })
-
   useEffect(() => {
-    if (!localStorage.getItem('access')) {
+    const token = localStorage.getItem('access')
+    if (!token) {
       navigate('/login')
       return
     }
     fetchData()
-  }, [])
+  }, [navigate])
 
   async function fetchData() {
-    const [h, d] = await Promise.all([
-      axios.get(`${API}/habits/`, auth()),
-      axios.get(`${API}/dashboard/`, auth()),
-    ])
-    const rows = h.data.map(x => ({ ...x, streak: 0 }))
-    setHabits(rows)
-    setStats(d.data)
+    try {
+      const [h, d] = await Promise.all([
+        api.get('/habits/'),
+        api.get('/dashboard/'),
+      ])
+      const rows = h.data.map(x => ({ ...x, streak: 0 }))
+      setHabits(rows)
+      setStats(d.data)
+    } catch (error) {
+      console.error('Failed to fetch data:', error)
+      // If it's an authentication error, redirect to login
+      if (error.response?.status === 401) {
+        navigate('/login')
+      }
+    }
   }
 
   async function addHabit(values) {
-    const res = await axios.post(`${API}/habits/`, values, auth())
-    setHabits(prev => [...prev, { ...res.data, streak: 0 }])
-    setOpen(false); setEditing(null)
+    try {
+      const res = await api.post('/habits/', values)
+      setHabits(prev => [...prev, { ...res.data, streak: 0 }])
+      setOpen(false); setEditing(null)
+    } catch (error) {
+      console.error('Failed to add habit:', error)
+    }
   }
 
   async function updateHabit(habitId, values) {
-    const res = await axios.put(`${API}/habits/${habitId}/`, values, auth())
-    setHabits(prev => prev.map(h => h.id === habitId ? { ...res.data, streak: h.streak } : h))
-    setOpen(false); setEditing(null)
+    try {
+      const res = await api.put(`/habits/${habitId}/`, values)
+      setHabits(prev => prev.map(h => h.id === habitId ? { ...res.data, streak: h.streak } : h))
+      setOpen(false); setEditing(null)
+    } catch (error) {
+      console.error('Failed to update habit:', error)
+    }
   }
 
   async function deleteHabit(habit) {
-    await axios.delete(`${API}/habits/${habit.id}/`, auth())
-    setHabits(prev => prev.filter(h => h.id !== habit.id))
+    try {
+      await api.delete(`/habits/${habit.id}/`)
+      setHabits(prev => prev.filter(h => h.id !== habit.id))
+    } catch (error) {
+      console.error('Failed to delete habit:', error)
+    }
   }
 
   async function toggleHabit(habit) {
     const today = new Date().toISOString().slice(0,10)
     try {
       // Toggle completion status
-      await axios.post(`${API}/habits/${habit.id}/logs/`, { date: today, completed: true }, auth())
+      await api.post(`/habits/${habit.id}/logs/`, { date: today, completed: true })
       
       // Refresh both habits list and dashboard stats
       const [h, d] = await Promise.all([
-        axios.get(`${API}/habits/`, auth()),
-        axios.get(`${API}/dashboard/`, auth())
+        api.get('/habits/'),
+        api.get('/dashboard/')
       ])
       
       const updatedHabits = h.data.map(x => ({ ...x, streak: 0 }))
@@ -86,7 +103,9 @@ export default function Dashboard() {
     items.splice(result.destination.index, 0, moved)
     setHabits(items)
     const order = items.map((h, idx) => ({ id: h.id, order: idx }))
-    axios.post(`${API}/habits/reorder/`, { order }, auth())
+    api.post('/habits/reorder/', { order }).catch(error => {
+      console.error('Failed to reorder habits:', error)
+    })
   }
 
   return (
