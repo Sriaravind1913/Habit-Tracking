@@ -1,15 +1,32 @@
 import React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { setTheme } from '../theme.js'
+import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { auth } from '../firebase-config.js'
 
 export default function Navbar() {
   const navigate = useNavigate()
   const token = localStorage.getItem('access')
   const [uiTick, setUiTick] = React.useState(0)
+  const [firebaseUser, setFirebaseUser] = React.useState(null)
+
+  React.useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      setFirebaseUser(user)
+      if (user && (!user.photoURL || user.photoURL === '')) {
+        // Try to refresh user profile to get latest photoURL from provider
+        user.reload?.().then(() => {
+          setFirebaseUser(auth.currentUser)
+        }).catch(()=>{})
+      }
+    })
+    return () => unsub()
+  }, [])
 
   function logout() {
     localStorage.removeItem('access')
     localStorage.removeItem('refresh')
+    try { signOut(auth) } catch (_) {}
     navigate('/login')
   }
 
@@ -117,9 +134,22 @@ export default function Navbar() {
               })
             )
           })(),
-          token
-            ? React.createElement('button', { onClick: logout, className: 'px-3 py-1 rounded bg-gray-900 text-white' }, 'Logout')
-            : React.createElement(Link, { to: '/login', className: 'px-3 py-1 rounded bg-gray-900 text-white' }, 'Login')
+          firebaseUser
+            ? React.createElement('div', { className: 'flex items-center gap-3' },
+                React.createElement('button', { onClick: ()=>navigate('/profile'), className: 'flex items-center gap-2' },
+                  (firebaseUser.photoURL || (firebaseUser.providerData && firebaseUser.providerData.find && (firebaseUser.providerData.find(p=>p.photoURL) || {}).photoURL) || (firebaseUser.providerData && firebaseUser.providerData[0] && firebaseUser.providerData[0].photoURL))
+                    ? React.createElement('img', { src: firebaseUser.photoURL || (firebaseUser.providerData && firebaseUser.providerData.find && (firebaseUser.providerData.find(p=>p.photoURL) || {}).photoURL) || (firebaseUser.providerData && firebaseUser.providerData[0] && firebaseUser.providerData[0].photoURL), alt: firebaseUser.displayName || 'Profile', className: 'w-8 h-8 rounded-full border object-cover' })
+                    : React.createElement('div', { className: 'w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center border' },
+                        React.createElement('span', { className: 'text-sm text-gray-700' }, (firebaseUser.displayName || 'U')[0])
+                      )
+                ),
+                React.createElement('span', { className: 'text-sm hidden sm:inline text-gray-700 dark:text-gray-200' }, firebaseUser.displayName || firebaseUser.email || 'Profile'),
+                React.createElement('button', { onClick: logout, className: 'px-3 py-1 rounded bg-gray-900 text-white' }, 'Logout')
+              )
+            : (token
+                ? React.createElement('button', { onClick: logout, className: 'px-3 py-1 rounded bg-gray-900 text-white' }, 'Logout')
+                : React.createElement(Link, { to: '/login', className: 'px-3 py-1 rounded bg-gray-900 text-white' }, 'Login')
+              )
         )
       )
     )
