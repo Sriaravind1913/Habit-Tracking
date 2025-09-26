@@ -5,11 +5,20 @@ export default function Insights() {
   const [data, setData] = useState(null)
 
   useEffect(() => {
+    const token = localStorage.getItem('access')
+    if (!token) {
+      // Avoid API call that would trigger redirect via interceptor
+      setData({ completion_rate: 0, best_streak: 0, total_habits: 0 })
+      return
+    }
     async function load() {
       try {
         const res = await api.get('/dashboard/')
         setData(res.data)
-      } catch (e) { /* ignore */ }
+      } catch (e) {
+        // keep page visible; user can still navigate without redirecting to login
+        setData({ completion_rate: 0, best_streak: 0, total_habits: 0 })
+      }
     }
     load()
   }, [])

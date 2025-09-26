@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { auth } from '../firebase-config.js'
 
 const API = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api'
 
@@ -9,10 +10,21 @@ const api = axios.create({
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     const token = localStorage.getItem('access')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
+      return config
+    }
+
+    // If no backend token, but user is signed-in with Firebase, attach ID token
+    const user = auth.currentUser
+    if (user) {
+      try {
+        const idToken = await user.getIdToken()
+        // Keep backend JWT header empty to avoid conflicts; send Firebase token separately
+        config.headers['X-Firebase-Auth'] = idToken
+      } catch (_) { /* ignore */ }
     }
     return config
   },
@@ -36,10 +48,9 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refresh')
         if (!refreshToken) {
-          // No refresh token, redirect to login
+          // No refresh token; clear tokens but don't redirect so UI state remains
           localStorage.removeItem('access')
           localStorage.removeItem('refresh')
-          window.location.href = '/login'
           return Promise.reject(error)
         }
 
@@ -56,10 +67,9 @@ api.interceptors.response.use(
         return api(originalRequest)
       } catch (refreshError) {
         console.error('Token refresh failed:', refreshError)
-        // Refresh failed, redirect to login
+        // Refresh failed; clear tokens but do not redirect automatically
         localStorage.removeItem('access')
         localStorage.removeItem('refresh')
-        window.location.href = '/login'
         return Promise.reject(refreshError)
       }
     }

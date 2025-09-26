@@ -136,6 +136,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # DRF & JWT
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        'config.firebase_auth.FirebaseHeaderAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
@@ -144,6 +145,7 @@ REST_FRAMEWORK = {
 }
 
 from datetime import timedelta
+from corsheaders.defaults import default_headers, default_methods
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.environ.get('ACCESS_TOKEN_MINUTES', '60'))),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=int(os.environ.get('REFRESH_TOKEN_DAYS', '7'))),
@@ -158,3 +160,10 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
 ]
+# Allow default headers and methods plus our custom header
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'content-type',
+    'x-firebase-auth',
+]
+CORS_ALLOW_METHODS = list(default_methods)
+CORS_ALLOW_CREDENTIALS = True

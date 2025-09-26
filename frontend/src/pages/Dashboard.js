@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { auth } from '../firebase-config.js'
 import api from '../utils/api.js'
 import { Link, useNavigate } from 'react-router-dom'
 import HabitCard from '../components/HabitCard.js'
@@ -15,12 +16,21 @@ export default function Dashboard() {
 
   useEffect(() => {
     const token = localStorage.getItem('access')
-    if (!token) {
-      navigate('/login')
-      return
+    if (token || auth.currentUser) {
+      fetchData()
     }
-    fetchData()
-  }, [navigate])
+  }, [])
+
+  function ensureAuthenticated() {
+    const token = localStorage.getItem('access')
+    const firebaseUser = auth.currentUser
+    if (!token && !firebaseUser) {
+      window.alert('Please sign in to perform this action.')
+      navigate('/login')
+      return false
+    }
+    return true
+  }
 
   async function fetchData() {
     try {
@@ -41,6 +51,7 @@ export default function Dashboard() {
   }
 
   async function addHabit(values) {
+    if (!ensureAuthenticated()) return
     try {
       const res = await api.post('/habits/', values)
       setHabits(prev => [...prev, { ...res.data, streak: 0 }])
@@ -51,6 +62,7 @@ export default function Dashboard() {
   }
 
   async function updateHabit(habitId, values) {
+    if (!ensureAuthenticated()) return
     try {
       const res = await api.put(`/habits/${habitId}/`, values)
       setHabits(prev => prev.map(h => h.id === habitId ? { ...res.data, streak: h.streak } : h))
@@ -61,6 +73,7 @@ export default function Dashboard() {
   }
 
   async function deleteHabit(habit) {
+    if (!ensureAuthenticated()) return
     try {
       await api.delete(`/habits/${habit.id}/`)
       setHabits(prev => prev.filter(h => h.id !== habit.id))
@@ -70,6 +83,7 @@ export default function Dashboard() {
   }
 
   async function toggleHabit(habit) {
+    if (!ensureAuthenticated()) return
     const today = new Date().toISOString().slice(0,10)
     try {
       // Toggle completion status
@@ -97,6 +111,7 @@ export default function Dashboard() {
   }
 
   function onDragEnd(result) {
+    if (!ensureAuthenticated()) return
     if (!result.destination) return
     const items = Array.from(habits)
     const [moved] = items.splice(result.source.index, 1)
